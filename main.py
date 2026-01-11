@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware  # ### NEW IMPORT
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse  # <--- NEW IMPORT REQUIRED
 from pydantic import BaseModel, Field
 
 tags_metadata = [
@@ -24,16 +25,14 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 
-# ### NEW: ADD THIS BLOCK AFTER app = FastAPI(...) ###
+# --- MIDDLEWARE ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows your local HTML file to talk to the API
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# ### END NEW BLOCK ###
-
 
 # --- 2. THE DICTIONARY ---
 MORSE_CODE_DICT =  {'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.',
@@ -51,34 +50,29 @@ MORSE_CODE_DICT =  {'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.',
 
 REVERSE_DICT = {value: key for key, value in MORSE_CODE_DICT.items()}
 
-# --- 3. DATA MODELS WITH EXAMPLES ---
+# --- 3. DATA MODELS ---
 class TextRequest(BaseModel):
-    # This 'example' will appear automatically in the UI
     text: str = Field(..., example="HELLO WORLD", description="The plain text message to convert.")
 
 class MorseRequest(BaseModel):
-    # This 'example' will appear automatically in the UI
     morse_code: str = Field(..., example=".... . .-.. .-.. --- / .-- --- .-. .-.. -..", description="Morse code string. Use space for letters and / for words.")
 
-# --- 4. TUNED ENDPOINTS ---
+# --- 4. ENDPOINTS ---
 
+# ### UPDATED: This now serves your Website instead of JSON ###
 @app.get("/", tags=["System"])
 def home():
     """
-    **System Check**
+    **Home Page**
     
-    Returns a simple message to confirm the API is online.
+    Serves the Morse Code Translator Interface.
     """
-    return {"status": "online", "message": "Go to /docs to use the converter."}
+    return FileResponse('index.html')
 
 @app.post("/text-to-morse", tags=["Conversion"], summary="Convert Text -> Morse")
 def convert_text_to_morse(request: TextRequest):
     """
     **Converts Plain Text to Morse Code**
-    
-    - **Input:** Standard English text (A-Z, 0-9).
-    - **Output:** Morse code string.
-    - **Logic:** Letters separated by spaces, words separated by `/`.
     """
     input_text = request.text.upper()
     
@@ -101,10 +95,6 @@ def convert_text_to_morse(request: TextRequest):
 def convert_morse_to_text(request: MorseRequest):
     """
     **Converts Morse Code to Plain Text**
-    
-    - **Input:** String of dots and dashes.
-    - **Output:** Decoded English text.
-    - **Format:** Use `space` between letters and `/` between words.
     """
     input_morse = request.morse_code.strip()
     
