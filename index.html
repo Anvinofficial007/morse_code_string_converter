@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morse Code Converter</title>
+    <style>
+        /* --- COLOR PALETTE --- 
+           BG Dark: #313647
+           BG Light: #435663
+           Accent Green: #A3B087
+           Text Cream: #FFF8D4
+        */
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: #313647; /* Main Background */
+            color: #FFF8D4;            /* Main Text */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #A3B087; /* Accent on Title */
+        }
+
+        p.desc {
+            color: #FFF8D4;
+            opacity: 0.8;
+            margin-bottom: 40px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* Container for the two boxes */
+        .converter-container {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 30px;
+        }
+        
+        .box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #A3B087; /* Green Accent for labels */
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            background-color: #435663; /* Slate Box Background */
+            color: #FFF8D4;            /* Cream Text inside box */
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 20px;
+            font-family: 'Courier New', monospace; /* Monospace for code feel */
+            resize: none;
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        textarea::placeholder {
+            color: rgba(255, 248, 212, 0.3);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #A3B087; /* Green Glow on focus */
+            background-color: #4a5f6e; /* Slightly lighter on focus */
+            box-shadow: 0 0 15px rgba(163, 176, 135, 0.3);
+        }
+
+        /* --- BUTTONS --- */
+        .controls {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 50px; /* Fully rounded buttons */
+            padding: 15px 50px;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* Play Button uses the Palette Green */
+        .btn-play {
+            background-color: #A3B087;
+            color: #313647; /* Dark text for contrast */
+        }
+
+        .btn-play:hover {
+            background-color: #b1bd96; /* Slightly lighter green */
+        }
+
+        /* Stop Button - Kept Red for UX safety, but desaturated to fit the theme */
+        .btn-stop {
+            background-color: #d65a5a; 
+            color: #FFF8D4;
+        }
+
+        .btn-stop:hover {
+            background-color: #e06b6b;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>MORSE CODE TRANSLATOR</h1>
+    <p class="desc">
+        Team: Volt Vortex <br>
+        Task 1B
+    </p>
+
+    <div class="converter-container">
+        
+        <div class="box">
+            <div class="label-row">
+                <span>INPUT TEXT</span>
+                <span>🔤</span>
+            </div>
+            <textarea id="textInput" placeholder="Type text here (e.g. HELLO)..."></textarea>
+        </div>
+
+        <div class="box">
+            <div class="label-row">
+                <span>MORSE OUTPUT</span>
+                <span>📡</span>
+            </div>
+            <textarea id="morseInput" placeholder=".- -. ...- .. -."></textarea>
+        </div>
+
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-play" onclick="playAudio()">
+            <span>▶</span> Play
+        </button>
+        <button class="btn btn-stop" onclick="stopAudio()">
+            <span>■</span> Stop
+        </button>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const morseInput = document.getElementById('morseInput');
+
+        // --- 1. Text -> Morse Logic ---
+        textInput.addEventListener('input', async function() {
+            const text = textInput.value;
+            
+            // Visual Reset
+            morseInput.style.color = "#FFF8D4"; 
+
+            if(text.trim() === "") {
+                morseInput.value = "";
+                return;
+            }
+            try {
+                const response = await fetch('http://127.0.0.1:8000/text-to-morse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+                
+                if (!response.ok) {
+                    morseInput.value = "Error: Unsupported Character";
+                    morseInput.style.color = "#ff6b6b"; // Red for error
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.morse) {
+                    morseInput.value = data.morse;
+                }
+            } catch (error) { console.error("API Error:", error); }
+        });
+
+        // --- 2. Morse -> Text Logic (With Validation) ---
+        morseInput.addEventListener('input', async function() {
+            const morse = morseInput.value;
+
+            // Regex: Only dots, dashes, spaces, and slashes allowed
+            const isValidMorse = /^[.\- /]*$/.test(morse);
+
+            if (!isValidMorse) {
+                textInput.value = "Invalid Character! Only . - / allowed";
+                textInput.style.color = "#ff6b6b"; // Red for error
+                return; 
+            } else {
+                textInput.style.color = "#FFF8D4"; // Reset to Cream
+            }
+
+            if(morse.trim() === "") {
+                textInput.value = "";
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/morse-to-text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ morse_code: morse })
+                });
+
+                if (!response.ok) {
+                    textInput.value = "Invalid Morse Sequence";
+                    textInput.style.color = "#ff6b6b";
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.text) textInput.value = data.text;
+            } catch (error) { console.error("API Error:", error); }
+        });
+
+        // --- 3. AUDIO ENGINE ---
+        let audioCtx = null; 
+
+        function playAudio() {
+            const morseCode = morseInput.value;
+            
+            if (!morseCode || morseCode.startsWith("Error") || morseCode.startsWith("Invalid")) {
+                alert("Please enter valid Morse code first!");
+                return;
+            }
+
+            if (audioCtx) stopAudio();
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const dotDuration = 0.08; 
+            const frequency = 600;    
+            let currentTime = audioCtx.currentTime;
+
+            for (let char of morseCode) {
+                if (char === '.') {
+                    scheduleTone(currentTime, dotDuration, frequency);
+                    currentTime += dotDuration; 
+                } else if (char === '-') {
+                    scheduleTone(currentTime, dotDuration * 3, frequency);
+                    currentTime += (dotDuration * 3);
+                } else if (char === ' ' || char === '/') {
+                    currentTime += (dotDuration * 3); 
+                }
+                currentTime += dotDuration; 
+            }
+        }
+
+        function scheduleTone(startTime, duration, freq) {
+            if (!audioCtx) return; 
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = freq;
+            
+            // Soften the beep start/end to avoid "clicking" sound
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(1, startTime + 0.01);
+            gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration);
+        }
+
+        function stopAudio() {
+            if (audioCtx) {
+                audioCtx.close();
+                audioCtx = null; 
+            }
+        }
+    </script>
+
+</body>
+</html>
