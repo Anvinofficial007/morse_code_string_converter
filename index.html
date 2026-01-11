@@ -193,7 +193,7 @@
                 return;
             }
             try {
-                const response = await fetch('http://127.0.0.1:8000/text-to-morse', {
+                const response = await fetch('/text-to-morse', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: text })
@@ -233,7 +233,7 @@
             }
 
             try {
-                const response = await fetch('http://127.0.0.1:8000/morse-to-text', {
+                const response = await fetch('/morse-to-text', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ morse_code: morse })
@@ -310,4 +310,5 @@
     </script>
 
 </body>
+
 </html>
