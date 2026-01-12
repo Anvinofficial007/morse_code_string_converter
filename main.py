@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse  # <--- NEW IMPORT REQUIRED
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+import os  # <--- 1. NEW IMPORT (Safety for Vercel)
 
 tags_metadata = [
     {
@@ -16,10 +17,10 @@ tags_metadata = [
 
 app = FastAPI(
     title="Morse Code Converter",
-    description="A professional API that converts plain text into Morse code and vice versa. Developed for the recruitment task.",
+    description="A professional API that converts plain text into Morse code and vice versa.",
     version="1.0.0",
     contact={
-        "name": "Anvin (Your Name)",
+        "name": "Anvin",
         "email": "student@tkmce.ac.in",
     },
     openapi_tags=tags_metadata
@@ -34,7 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- 2. THE DICTIONARY ---
+# --- DICTIONARY ---
 MORSE_CODE_DICT =  {'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.',
                    'F': '..-.', 'G': '--.', 'H': '....', 'I': '..', 'J': '.---',
                    'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---',
@@ -50,37 +51,33 @@ MORSE_CODE_DICT =  {'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.',
 
 REVERSE_DICT = {value: key for key, value in MORSE_CODE_DICT.items()}
 
-# --- 3. DATA MODELS ---
+# --- MODELS ---
 class TextRequest(BaseModel):
-    text: str = Field(..., example="HELLO WORLD", description="The plain text message to convert.")
+    text: str = Field(..., example="HELLO WORLD")
 
 class MorseRequest(BaseModel):
-    morse_code: str = Field(..., example=".... . .-.. .-.. --- / .-- --- .-. .-.. -..", description="Morse code string. Use space for letters and / for words.")
+    morse_code: str = Field(..., example=".... . .-.. .-.. --- / .-- --- .-. .-.. -..")
 
-# --- 4. ENDPOINTS ---
+# --- ENDPOINTS ---
 
-# ### UPDATED: This now serves your Website instead of JSON ###
 @app.get("/", tags=["System"])
 def home():
     """
     **Home Page**
-    
     Serves the Morse Code Translator Interface.
     """
-    return FileResponse('index.html')
+    # 2. SAFETY FIX: Get the absolute path to index.html
+    # This prevents "File Not Found" errors on Vercel
+    file_path = os.path.join(os.path.dirname(__file__), "index.html")
+    return FileResponse(file_path)
 
-@app.post("/text-to-morse", tags=["Conversion"], summary="Convert Text -> Morse")
+@app.post("/text-to-morse", tags=["Conversion"])
 def convert_text_to_morse(request: TextRequest):
-    """
-    **Converts Plain Text to Morse Code**
-    """
     input_text = request.text.upper()
-    
     if not input_text:
         raise HTTPException(status_code=400, detail="Input text cannot be empty.")
-
-    morse_output = []
     
+    morse_output = []
     for char in input_text:
         if char in MORSE_CODE_DICT:
             morse_output.append(MORSE_CODE_DICT[char])
@@ -91,33 +88,25 @@ def convert_text_to_morse(request: TextRequest):
 
     return {"original": input_text, "morse": " ".join(morse_output)}
 
-@app.post("/morse-to-text", tags=["Conversion"], summary="Convert Morse -> Text")
+@app.post("/morse-to-text", tags=["Conversion"])
 def convert_morse_to_text(request: MorseRequest):
-    """
-    **Converts Morse Code to Plain Text**
-    """
     input_morse = request.morse_code.strip()
-    
     if not input_morse:
         raise HTTPException(status_code=400, detail="Input Morse code cannot be empty.")
 
     normalized_morse = input_morse.replace(' / ', '/')
     words = normalized_morse.split('/')
-    
     decoded_message = []
 
     for word in words:
         if word == "": continue
-        
         letters = word.strip().split(' ')
         decoded_word = ""
-        
         for letter in letters:
             if letter in REVERSE_DICT:
                 decoded_word += REVERSE_DICT[letter]
             else:
                 raise HTTPException(status_code=400, detail=f"Invalid Morse sequence: {letter}")
-        
         decoded_message.append(decoded_word)
 
     return {"original": input_morse, "text": " ".join(decoded_message)}
