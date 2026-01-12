@@ -193,6 +193,7 @@
                 return;
             }
             try {
+                // ### FIX: Use relative URL for Vercel ###
                 const response = await fetch('/text-to-morse', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -201,7 +202,7 @@
                 
                 if (!response.ok) {
                     morseInput.value = "Error: Unsupported Character";
-                    morseInput.style.color = "#ff6b6b"; // Red for error
+                    morseInput.style.color = "#ff6b6b"; 
                     return;
                 }
 
@@ -216,15 +217,14 @@
         morseInput.addEventListener('input', async function() {
             const morse = morseInput.value;
 
-            // Regex: Only dots, dashes, spaces, and slashes allowed
             const isValidMorse = /^[.\- /]*$/.test(morse);
 
             if (!isValidMorse) {
                 textInput.value = "Invalid Character! Only . - / allowed";
-                textInput.style.color = "#ff6b6b"; // Red for error
+                textInput.style.color = "#ff6b6b"; 
                 return; 
             } else {
-                textInput.style.color = "#FFF8D4"; // Reset to Cream
+                textInput.style.color = "#FFF8D4"; 
             }
 
             if(morse.trim() === "") {
@@ -233,6 +233,7 @@
             }
 
             try {
+                // ### FIX: Use relative URL for Vercel ###
                 const response = await fetch('/morse-to-text', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -290,7 +291,6 @@
             oscillator.type = 'sine';
             oscillator.frequency.value = freq;
             
-            // Soften the beep start/end to avoid "clicking" sound
             gainNode.gain.setValueAtTime(0, startTime);
             gainNode.gain.linearRampToValueAtTime(1, startTime + 0.01);
             gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
@@ -310,5 +310,4 @@
     </script>
 
 </body>
-
 </html>
